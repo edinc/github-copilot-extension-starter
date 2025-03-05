@@ -1,4 +1,3 @@
-
 # Use the official Node.js image as the base image
 FROM node:14
 
@@ -14,8 +13,11 @@ RUN npm install
 # Copy the rest of the application code to the working directory
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Set the PORT environment variable
+ENV PORT=80
+
+# Expose port 80 instead of 3000
+EXPOSE 80
 
 # Command to run the application
 CMD ["npm", "start"]

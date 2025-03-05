@@ -1,0 +1,49 @@
+name: Deploy to Azure Container App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy the solution
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Login to Azure
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: acrgithubcopilotextension.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    - name: Build and push Docker image
+      run: |
+        IMAGE_TAG=${{ github.sha }}
+        docker build -t acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:$IMAGE_TAG .
+        docker push acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:$IMAGE_TAG
+      env:
+        IMAGE_TAG: ${{ github.sha }}
+    
+    - name: Deploy to Container App
+      uses: azure/container-apps-deploy-action@v2
+      with:
+        imageToDeploy: acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:${{ github.sha }}
+        acrUsername: ${{ secrets.ACR_USERNAME }}
+        acrPassword: ${{ secrets.ACR_PASSWORD }}
+        resourceGroup: rg-github-copilot-extension
+        containerAppEnvironment: envgithubcopilotextension
+        containerAppName: appgithubcopilotextension
+        targetPort: 80
