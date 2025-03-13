@@ -38,13 +38,13 @@ jobs:
       run: |
         IMAGE_TAG=${{ github.run_number }}
         az acr login --name ${{ secrets.ACR_LOGIN_SERVER }} --username ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }} &&
-        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG -f Dockerfile . &&
-        docker push ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$$IMAGE_TAG
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG -f Dockerfile . &&
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG
 
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG
+        imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG
         acrUsername: ${{ secrets.ACR_USERNAME }}
         acrPassword: ${{ secrets.ACR_PASSWORD }}
         resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
