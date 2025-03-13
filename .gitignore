@@ -196,3 +196,6 @@ terraform.rc
 
 # HCL files
 *.hcl
+
+# VSCode directory
+.vscode/

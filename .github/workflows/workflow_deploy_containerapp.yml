@@ -1,10 +1,17 @@
-name: Deploy to Azure Container App
+name: Build, Test, and Deploy to Azure Container App
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main        # Automatic trigger on push to main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  build-and-deploy:
+  build-test-deploy:
     name: Build and Deploy the solution
     runs-on: ubuntu-latest
 
@@ -12,38 +19,68 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Login to Azure
-      uses: azure/login@v2
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Log in to Azure
+      uses: azure/login@v1
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: "1.5.7"
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: terraform
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+      working-directory: terraform
+      env:
+        TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        TF_VAR_github_repo: ${{ github.repository }}
+
+    - name: Extract ACR details
+      id: acr
+      run: |
+        echo "acr_server=$(terraform output -raw acr_login_server)" >> $GITHUB_ENV
+        echo "acr_username=$(terraform output -raw acr_username)" >> $GITHUB_ENV
+        echo "acr_password=$(terraform output -raw acr_password)" >> $GITHUB_ENV
+        echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_ENV
+        echo "container_app_environment=$(terraform output -raw container_app_environment)" >> $GITHUB_ENV
+        echo "container_app_name=$(terraform output -raw container_app_name)" >> $GITHUB_ENV
+      working-directory: terraform
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 
     - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
+      uses: docker/login-action@v2
       with:
-        login-server: acrgithubcopilotextension.azurecr.io
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
+        registry: ${{ env.acr_server }}
+        username: ${{ env.acr_username }}
+        password: ${{ env.acr_password }}
 
     - name: Build and push Docker image
       run: |
         IMAGE_TAG=${{ github.sha }}
-        docker build -t acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:$IMAGE_TAG .
-        docker push acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:$IMAGE_TAG
-      env:
-        IMAGE_TAG: ${{ github.sha }}
-    
+        docker build -t ${{ env.acr_server }}/appgithubcopilotextension:$IMAGE_TAG .
+        docker push ${{ env.acr_server }}/appgithubcopilotextension:$IMAGE_TAG
+
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        imageToDeploy: acrgithubcopilotextension.azurecr.io/appgithubcopilotextension:${{ github.sha }}
-        acrUsername: ${{ secrets.ACR_USERNAME }}
-        acrPassword: ${{ secrets.ACR_PASSWORD }}
-        resourceGroup: rg-github-copilot-extension
-        containerAppEnvironment: envgithubcopilotextension
-        containerAppName: appgithubcopilotextension
+        imageToDeploy: ${{ env.acr_server }}/appgithubcopilotextension:${{ github.sha }}
+        resourceGroup: ${{ env.resource_group_name }}
+        containerAppName: ${{ env.container_app_name }}
         targetPort: 80

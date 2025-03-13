@@ -38,3 +38,8 @@ variable "subscription_id" {
   description = "The subscription ID for the Azure account"
   type        = string
 }
+
+variable "github_repo" {
+  description = "The GitHub repository in format owner/repo"
+  type        = string
+}
