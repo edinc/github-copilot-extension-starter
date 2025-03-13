@@ -34,55 +34,20 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Log into Azure Container Registry
+    - name: Build and push Image
       run: |
-        az acr login --name $(echo ${{ secrets.ACR_LOGIN_SERVER }} | cut -d'.' -f1)
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Verify Secrets (safely)
-      run: |
-        echo "Checking if secrets are set (without exposing values)..."
-        [ -n "${{ secrets.ACR_LOGIN_SERVER }}" ] && echo "ACR_LOGIN_SERVER is set" || echo "ACR_LOGIN_SERVER is NOT set"
-        [ -n "${{ secrets.CONTAINER_APP_NAME }}" ] && echo "CONTAINER_APP_NAME is set" || echo "CONTAINER_APP_NAME is NOT set"
-        [ -n "${{ secrets.RESOURCE_GROUP_NAME }}" ] && echo "RESOURCE_GROUP_NAME is set" || echo "RESOURCE_GROUP_NAME is NOT set"
-        
-        # Print the structure of the image name (with * for secret parts)
-        echo "Image name structure will be: ***ACR_LOGIN_SERVER***/***CONTAINER_APP_NAME***:TAG"
-
-    - name: Build and push Docker image
-      run: |
-        # Store the values in environment variables first
-        ACR_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
-        CONTAINER_APP="${{ secrets.CONTAINER_APP_NAME }}"
-        
-        # Verify the variables are set
-        if [ -z "$ACR_SERVER" ] || [ -z "$CONTAINER_APP" ]; then
-          echo "Error: Required secrets are not set"
-          exit 1
-        fi
-        
-        # Create image tag
-        IMAGE_TAG=$(date +%Y%m%d)-${GITHUB_RUN_NUMBER}
-        FULL_IMAGE_NAME="$ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG}"
-        
-        echo "Building image with tag: $IMAGE_TAG"
-        echo "Full image name: $FULL_IMAGE_NAME"
-        
-        docker build -t $FULL_IMAGE_NAME .
-        docker push $FULL_IMAGE_NAME
-        
-        # Set outputs for next steps
-        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-        echo "FULL_IMAGE_NAME=${FULL_IMAGE_NAME}" >> $GITHUB_ENV
+        IMAGE_TAG=${{ github.run_number }}
+        az acr login --name ${{ secrets.ACR_LOGIN_SERVER }} --username ${{ secrets.ACR_USERNAME }} --password ${{ secrets.ACR_PASSWORD }} &&
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG -f Dockerfile . &&
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$$IMAGE_TAG
 
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
-        imageToDeploy: ${{ env.FULL_IMAGE_NAME }}
+        imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}.azurecr.io/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG
+        acrUsername: ${{ secrets.ACR_USERNAME }}
+        acrPassword: ${{ secrets.ACR_PASSWORD }}
         resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
+        containerAppEnvironment: ${{ secrets.CONTAINER_APP_ENVIRONMENT }}
         containerAppName: ${{ secrets.CONTAINER_APP_NAME }}
         targetPort: 80
-        location: 'germanywestcentral'  # Make sure this matches your container app's location
