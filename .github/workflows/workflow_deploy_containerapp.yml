@@ -65,23 +65,24 @@ jobs:
         
         # Create image tag
         IMAGE_TAG=$(date +%Y%m%d)-${GITHUB_RUN_NUMBER}
+        FULL_IMAGE_NAME="$ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG}"
+        
         echo "Building image with tag: $IMAGE_TAG"
-        echo "Full image name: $ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG}"
+        echo "Full image name: $FULL_IMAGE_NAME"
         
-        docker build -t $ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG} .
-        docker push $ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG}
+        docker build -t $FULL_IMAGE_NAME .
+        docker push $FULL_IMAGE_NAME
         
-        # Set output for use in next step
+        # Set outputs for next steps
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-        echo "FULL_IMAGE_NAME=$ACR_SERVER/$CONTAINER_APP:${IMAGE_TAG}" >> $GITHUB_ENV
+        echo "FULL_IMAGE_NAME=${FULL_IMAGE_NAME}" >> $GITHUB_ENV
 
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
-      env:
-        ACR_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-        CONTAINER_APP: ${{ secrets.CONTAINER_APP_NAME }}
       with:
+        registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
         imageToDeploy: ${{ env.FULL_IMAGE_NAME }}
         resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
         containerAppName: ${{ secrets.CONTAINER_APP_NAME }}
         targetPort: 80
+        location: 'germanywestcentral'  # Make sure this matches your container app's location
