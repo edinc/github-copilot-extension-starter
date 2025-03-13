@@ -46,14 +46,14 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        IMAGE_TAG=${{ github.sha }}
+        IMAGE_TAG=${{ github.run_number }}
         docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG .
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:$IMAGE_TAG
 
     - name: Deploy to Container App
       uses: azure/container-apps-deploy-action@v2
       with:
-        imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:${{ github.sha }}
+        imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/${{ secrets.CONTAINER_APP_NAME }}:${{ github.run_number }}
         resourceGroup: ${{ secrets.RESOURCE_GROUP_NAME }}
         containerAppName: ${{ secrets.CONTAINER_APP_NAME }}
         targetPort: 80

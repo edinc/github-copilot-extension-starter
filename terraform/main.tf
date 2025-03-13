@@ -50,6 +50,13 @@ resource "azurerm_role_assignment" "acr_push" {
   principal_id         = azuread_service_principal.sp.object_id
 }
 
+# Assign AcrPull role to the Container App's managed identity
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_container_app.app.identity[0].principal_id
+}
+
 resource "azurerm_container_app_environment" "env" {
   name                = var.env_name
   resource_group_name = azurerm_resource_group.rg.name
@@ -61,6 +68,10 @@ resource "azurerm_container_app" "app" {
   resource_group_name         = azurerm_resource_group.rg.name
   container_app_environment_id = azurerm_container_app_environment.env.id
   revision_mode               = "Single"
+  
+  identity {
+    type = "SystemAssigned"
+  }
   
   template {
     container {
