@@ -95,7 +95,7 @@ After deployment and configuration:
 1. The GitHub Action will automatically build and deploy your extension
 2. Users can access your extension through GitHub Copilot Chat once installed
 
-### 5. Demo
+## Demo
 ![Demo Screenshot](./screenshots/Screenshot_2025-03-14.png)
 
 ## Documentation
