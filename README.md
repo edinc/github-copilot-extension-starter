@@ -1,6 +1,6 @@
 # github-copilot-extension-starter
 
-This is a starter template for building your own GitHub Copilot Extension. It's based on the [blackbeard-extension](https://github.com/github/copilot-example-agents/tree/main/blackbeard-extension) example, modified to include deployment infrastructure and setup instructions.
+This is a starter template for building your own GitHub Copilot Extension. It's based on the [blackbeard-extension](https://github.com/copilot-extensions/blackbeard-extension) example, modified to include deployment infrastructure and setup instructions.
 > Note:
 > 
 > Copilot Extensions are in public preview and may be subject to change.
