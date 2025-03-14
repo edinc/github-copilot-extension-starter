@@ -37,3 +37,8 @@ output "CONTAINER_APP_ENVIRONMENT" {
   value = azurerm_container_app_environment.env.name
   description = "The name of the container app environment. Store this as CONTAINER_APP_ENVIRONMENT in GitHub secrets."
 }
+
+output "CONTAINER_APP_URL" {
+  value       = "https://${azurerm_container_app.app.latest_revision_fqdn}"
+  description = "The URL of the container app. This URL should be used for the GitHub App configuration."
+}
