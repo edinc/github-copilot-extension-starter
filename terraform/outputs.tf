@@ -1,50 +1,39 @@
-output "azure_client_id" {
-  description = "Add this as AZURE_CLIENT_ID in GitHub repository secrets"
-  value       = azuread_application.app.client_id
+output "AZURE_CLIENT_ID" {
+  value = azurerm_user_assigned_identity.app_identity.client_id
+  description = "The client ID of the managed identity. Store this as AZURE_CLIENT_ID in GitHub secrets."
 }
 
-output "azure_tenant_id" {
-  description = "Add this as AZURE_TENANT_ID in GitHub repository secrets"
-  value       = data.azurerm_client_config.current.tenant_id
+output "AZURE_SUBSCRIPTION_ID" {
+  value = data.azurerm_client_config.current.subscription_id
+  description = "The Azure subscription ID. Store this as AZURE_SUBSCRIPTION_ID in GitHub secrets."
 }
 
-output "azure_subscription_id" {
-  description = "Add this as AZURE_SUBSCRIPTION_ID in GitHub repository secrets"
-  value       = data.azurerm_client_config.current.subscription_id
+output "AZURE_TENANT_ID" {
+  value = data.azurerm_client_config.current.tenant_id
+  description = "The Azure tenant ID. Store this as AZURE_TENANT_ID in GitHub secrets."
 }
 
-output "acr_login_server" {
-  description = "Add this as ACR_LOGIN_SERVER in GitHub repository secrets"
-  value       = azurerm_container_registry.acr.login_server
+output "ACR_LOGIN_SERVER" {
+  value = azurerm_container_registry.acr.login_server
+  description = "The ACR login server URL. Store this as ACR_LOGIN_SERVER in GitHub secrets."
 }
 
-output "acr_username" {
-  description = "Add this as ACR_USERNAME in GitHub repository secrets"
-  value       = azurerm_container_registry.acr.admin_username
+output "ACR_NAME" {
+  value = azurerm_container_registry.acr.name
+  description = "The name of the Azure Container Registry. Store this as ACR_NAME in GitHub secrets."
 }
 
-output "acr_password" {
-  description = "Add this as ACR_PASSWORD in GitHub repository secrets"
-  value       = azurerm_container_registry.acr.admin_password
-  sensitive   = true
+output "RESOURCE_GROUP_NAME" {
+  value = azurerm_resource_group.rg.name
+  description = "The name of the resource group. Store this as RESOURCE_GROUP_NAME in GitHub secrets."
 }
 
-output "resource_group_name" {
-  description = "Add this as RESOURCE_GROUP_NAME in GitHub repository secrets"
-  value       = azurerm_resource_group.rg.name
+output "CONTAINER_APP_NAME" {
+  value = azurerm_container_app.app.name
+  description = "The name of the container app. Store this as CONTAINER_APP_NAME in GitHub secrets."
 }
 
-output "container_app_name" {
-  description = "Add this as CONTAINER_APP_NAME in GitHub repository secrets"
-  value       = azurerm_container_app.app.name
-}
-
-output "container_app_url" {
-  description = "The URL of the latest revision of the Azure Container App"
-  value       = azurerm_container_app.app.latest_revision_fqdn
-}
-
-output "container_app_environment" {
-  description = "The name of the Container App Environment"
-  value       = azurerm_container_app_environment.env.name
+output "CONTAINER_APP_ENVIRONMENT" {
+  value = azurerm_container_app_environment.env.name
+  description = "The name of the container app environment. Store this as CONTAINER_APP_ENVIRONMENT in GitHub secrets."
 }

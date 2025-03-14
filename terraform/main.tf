@@ -5,34 +5,28 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
-# Create Azure AD Application
-resource "azuread_application" "app" {
-  display_name = "${var.app_name}-app"
-  owners       = [data.azurerm_client_config.current.object_id]
+# Create User Assigned Managed Identity
+resource "azurerm_user_assigned_identity" "app_identity" {
+  name                = "${var.app_name}-identity"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
 }
 
-# Create Service Principal
-resource "azuread_service_principal" "sp" {
-  client_id                    = azuread_application.app.client_id
-  app_role_assignment_required = false
-  owners                      = [data.azurerm_client_config.current.object_id]
+# Configure federated identity credential for the managed identity
+resource "azurerm_federated_identity_credential" "github_federated" {
+  name                = "github-actions-oidc"
+  resource_group_name = azurerm_resource_group.rg.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = "https://token.actions.githubusercontent.com"
+  parent_id           = azurerm_user_assigned_identity.app_identity.id
+  subject             = "repo:${var.github_repo}:ref:refs/heads/main"
 }
 
-# Configure OIDC federation
-resource "azuread_application_federated_identity_credential" "github_federated" {
-  application_id = azuread_application.app.id
-  display_name   = "github-actions-oidc"
-  description    = "GitHub Actions OIDC"
-  audiences      = ["api://AzureADTokenExchange"]
-  issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${var.github_repo}:ref:refs/heads/main"
-}
-
-# Assign Contributor role to the Service Principal at resource group level
-resource "azurerm_role_assignment" "sp_role" {
+# Assign Contributor role to the Managed Identity at resource group level
+resource "azurerm_role_assignment" "identity_role" {
   scope                = azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
-  principal_id         = azuread_service_principal.sp.object_id
+  principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
 }
 
 resource "azurerm_container_registry" "acr" {
@@ -43,11 +37,11 @@ resource "azurerm_container_registry" "acr" {
   admin_enabled      = true
 }
 
-# Assign AcrPush role to the Service Principal
+# Assign AcrPush role to the Managed Identity
 resource "azurerm_role_assignment" "acr_push" {
   scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPush"
-  principal_id         = azuread_service_principal.sp.object_id
+  principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
 }
 
 # Assign AcrPull role to the Container App's managed identity
@@ -71,6 +65,11 @@ resource "azurerm_container_app" "app" {
   
   identity {
     type = "SystemAssigned"
+  }
+
+  registry {
+    server   = azurerm_container_registry.acr.login_server
+    identity = "System"
   }
   
   template {
