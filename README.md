@@ -96,7 +96,18 @@ After deployment and configuration:
 2. Users can access your extension through GitHub Copilot Chat once installed
 
 ## Demo
-![Demo Screenshot](./screenshots/Screenshot_2025-03-14.png)
+Using the GitHub Copilot Exptension in Visual Studio Code:
+
+![Visual Studio Code Screenshot](./screenshots/Screenshot_2025-03-14.png)
+
+Using the GitHub Copilot Exptension on GitHub.com:
+
+![GitHub Screenshot](./screenshots/Screenshot_2025-03-15.png)
+
+Checking the Azure Container Logs to confirm the extension is working:
+
+![Azure Container App Logs Screenshot](./screenshots/Screenshot_2025-03-16.png)
+
 
 ## Documentation
 - [Using Copilot Extensions](https://docs.github.com/en/copilot/using-github-copilot/using-extensions-to-integrate-external-tools-with-copilot-chat)
