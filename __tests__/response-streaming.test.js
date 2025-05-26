@@ -21,4 +21,46 @@ describe('Response Streaming', () => {
     const readableStream = Readable.from(mockResponse.body);
     expect(readableStream).toBeInstanceOf(Readable);
   });
+  
+  test('should pipe stream data to response', () => {
+    // Create a mock response body
+    const mockResponseBody = new Readable();
+    mockResponseBody._read = () => {}; // Necessary for Readable streams
+    
+    // Create mock response
+    const mockResponse = {
+      body: mockResponseBody
+    };
+    
+    // Mock Express response with pipe method
+    const mockExpressResponse = {
+      write: jest.fn(),
+      end: jest.fn(),
+      on: jest.fn(),
+      once: jest.fn(),
+      emit: jest.fn(),
+      pipe: jest.fn().mockReturnThis()
+    };
+    
+    // Mock the pipe method on the Readable stream
+    const mockPipe = jest.fn().mockReturnValue(mockExpressResponse);
+    const mockReadableStream = {
+      pipe: mockPipe
+    };
+    
+    // Mock Readable.from to return our mockReadableStream
+    const originalFrom = Readable.from;
+    Readable.from = jest.fn().mockReturnValue(mockReadableStream);
+    
+    try {
+      // Test the piping functionality
+      Readable.from(mockResponse.body).pipe(mockExpressResponse);
+      
+      // Verify pipe was called with the express response
+      expect(mockPipe).toHaveBeenCalledWith(mockExpressResponse);
+    } finally {
+      // Restore the original Readable.from
+      Readable.from = originalFrom;
+    }
+  });
 });

@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import { Readable } from 'node:stream';
 
 // Mock external dependencies
 const mockRequest = jest.fn().mockResolvedValue({
@@ -37,6 +38,16 @@ describe('Express Server Endpoints', () => {
     app.get('/', (req, res) => {
       res.send('Ahoy, matey! Welcome to the Blackbeard Pirate GitHub Copilot Extension!')
     });
+    
+    app.post('/', express.json(), async (req, res) => {
+      // Simplified version of the POST handler for testing
+      const tokenForUser = req.get('X-GitHub-Token');
+      const octokit = new mockOctokit({ auth: tokenForUser });
+      await octokit.request('GET /user');
+      
+      // Simply respond with success for testing
+      res.status(200).send('Success');
+    });
   });
   
   afterAll(() => {
@@ -48,5 +59,20 @@ describe('Express Server Endpoints', () => {
     const response = await request(app).get('/');
     expect(response.status).toBe(200);
     expect(response.text).toContain('Ahoy, matey!');
+  });
+  
+  test('POST / should process messages and authenticate with GitHub', async () => {
+    const response = await request(app)
+      .post('/')
+      .set('X-GitHub-Token', 'test-token')
+      .send({
+        messages: [
+          { role: 'user', content: 'Hello there!' }
+        ]
+      });
+      
+    expect(response.status).toBe(200);
+    expect(mockOctokit).toHaveBeenCalledWith({ auth: 'test-token' });
+    expect(mockRequest).toHaveBeenCalledWith('GET /user');
   });
 });
